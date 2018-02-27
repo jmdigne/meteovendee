@@ -1,0 +1,259 @@
+Projet -- EVE Vendée Météo 
+=======================================
+
+Fichiers et Répertoires
+------------------------
+
+projects/meteovendee/
+- archives
+- bin
+	capturewebcam.sh
+	cron1heure.sh
+	getsat24.sh
+	renamewebcam.sh
+	transfertkazamarie.sh
+	clean-all.sh
+- captures
+- meteosat
+- gifs
+- images
+- logs
+- misc
+- www
+- transfert
+meteovendee_log.txt
+
+====================================================================================================
+A Faire 
+
+ - Archives sur 24 h ( 1 images / jours / Mozaique d'images -> 24 Images)
+ 
+ - make graphics temp/baro --> trouver package graphique plot
+ 
+
+====================================================================================================
+
+1 - bash --lister les fichiers vieux de moins d'une heure
+---------------------------------------------------------
+ 
+# Lister les fichiers jpg de moins d'une heure
+find  .  -mmin -20 -iname '*.jpg'
+
+# Pour chaque fichier jpg de moins d'une heure faire echo du nom
+	for line in $(find  .  -mmin -20 -iname '*.jpg'); do 
+		 echo "New file "
+	     echo $line
+	done
+	 
+
+
+2 - fswebcam -- Capturer une image WebCam home.jpg
+-------------------------------------------------------
+
+fswebcam -r 640x480 --title "Meudon-La-Forêt" --jpeg 95 --font sans:15 --subtitle "WeatherCam @Meudon" --info "Motorisé par Raspberry Pi" --save home1.jpg
+
+
+3 - bash -- Mettre dans le nom du fichier l'heure et la date
+-------------------------------------------------------------
+
+$(date +%Y%m%d)_$(date +%H%M)_WeatherCam.jpg
+
+fswebcam -r 640x480 --title "Meudon-La-Forêt" --jpeg 95 --font sans:15 --subtitle "WeatherCam @Meudon" --info "Motorisé par Raspberry Pi" --save $(date +%Y%m%d)_$(date +%H%M)_WeatherCam.jpg
+
+4 - fswebcam -- Capturer une image caméra extérieure /dev/video1
+-----------------------------------------------------------------
+
+-- device /dev/video1
+
+5 - fswebcam -- Boucle de capture 1 Heure / 1 image par minute -> 60 Minutes
+----------------------------------------------------------------------------
+
+- l 60 ( 1 images toutes les 60 secondes)
+--exec ./renamewebcam.sh
+
+--> donc tout capturer avec le mon webcam.jpg puis rlancer un script de renomage de fichier
+
+#!/bin/bash
+#
+cp webcam.jpg $(date +%Y%m%d)_$(date +%H%M)_WeatherCam.jpg 
+
+$ fswebcam -r 640x480 --device /dev/video1 --info "Motorisé par Raspberry Pi" -save webcam.jpg --exec ./renamewebcam.sh  -l 60
+
+
+
+6 - gifsicle -- Séquence d'images GIF Animé
+--------------------------------------------
+
+https://jmmiddleware.wordpress.com/2018/01/16/piprojects-capture-dimage-et-sequences-de-gifs/
+
+
+#!/usr/bin/env bash
+for (( i = 0; i < 10; i++ )); do
+	raspistill -h 486 -w 648 -a 1036 -vf -hf --encoding gif  -o /var/www/tempgifs/cam${i}.gif
+done
+gifsicle --delay=10 --colors 256  --loop /var/www/tempgifs/cam*  > /var/www/tempgifs/camd.gif
+mv /var/www/tempgifs/camd.gif /var/www/camd.gif
+raspistill -h 486 -w 648 -a 1036 -ae +25+25 -vf -hf -o /var/www/camd.jpg
+#the images are uploaded to tumblr via  a python script
+
+Images /home/jm/000_JMDEV/RaspberryPi/projects/meteovendee/archives/20180224_08/*.jpg /home/jm/000_JMDEV/RaspberryPi/projects/meteovendee/archives/20180224_08/20180224_08.gif
+gifsicle --delay=10 --colors 256  --loop /var/www/tempgifs/cam*  > /var/www/tempgifs/camd.gif
+*_WeatherCam.jpg
+
+--> fichier a convertir en GIF avec convert
+convert 2018*.jpg ../transfert/webcam.gif
+
+
+7 - wget -- Récupération Image Sat24
+------------------------------------
+
+Répertoire /home/jm/000_JMDEV/RaspberryPi/projects/meteovendee/meteosat
+
+wget https://api.sat24.com/mostrecent/EU/visual5hdcomplete
+
+Carte Radar Europe
+wget --output-document=$(date +%Y%m%d)_$(date +%H%M)_sat24_.png https://api.sat24.com/mostrecent/EU/visual5hdcomplete
+
+<a href='http://en.sat24.com/en' target='sat24'><img src='https://api.sat24.com/mostrecent/EU/visual5hdcomplete' width=1200 height=800></a>
+
+Carte Radar Centrée sur la Vendée
+<a href='http://en.sat24.com/en' target='sat24'><image src='https://api.sat24.com/crop?type=visual5hdcomplete&lat=46.3985&lon=-1.0707&width=800&height=800&zoom=1.00&continent=eu' width=800 height=800></a>
+
+Carte Pluie Europe
+https://api.sat24.com/mostrecent/EU/rainTMC
+
+<a href='http://en.sat24.com/en' target='sat24'><img src='https://api.sat24.com/mostrecent/EU/rainTMC' width=1200 height=800></a>
+
+Carte GIF Animé
+
+<a href='http://en.sat24.com/en' target='sat24'><image src='https://api.sat24.com/animated/FR/visual/2/Central%20Europe%20Standard%20Time/4538038' width=1200 height=800></a>
+
+Script getsat24.sh
+#!/bin/bash
+#
+RACINE=/home/disks/pidrive01/projects/meteovendee
+
+cd $RACINE/meteosat
+# Carte Radar
+wget --output-document=$(date +%Y%m%d)_$(date +%H%M)_sat24_radar.png https://api.sat24.com/mostrecent/EU/visual5hdcomplete
+# Carte Pluie
+wget --output-document=$(date +%Y%m%d)_$(date +%H%M)_sat24_pluie.png https://api.sat24.com/mostrecent/EU/rainTMC
+# Carte GIF Animé
+wget --output-document=$(date +%Y%m%d)_$(date +%H%M)_sat24_animation.gif https://api.sat24.com/animated/FR/visual/2/Central%20Europe%20Standard%20Time/4538038
+
+8 - Tester cron toutes les heures
+----------------------------------
+
+script de tests crontests dans /home/disks/pidrive01/projects/meteovendee/bin
+
+#!/bin/bash
+#
+RACINE=/home/disks/pidrive01/projects/meteovendee
+touch  $RACINE/logs/$(date +%Y%m%d)_$(date +%H%M)_testcron.txt
+
+
+il faut 0 */1 * * * pour avoir ça toutes les heures et ça revient a 0 * * * * 
+
+
+Ajouter ligne
+0 */1	* * *	pi    cd /home/disks/pidrive01/projects/meteovendee && sh crontest1h.sh
+ 
+a Editer avec sudo crontab -e
+#env
+SHELL=/bin/bash
+HOME=/home/jf
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ 
+*/20 * * * * bash /home/jf/exec/send-status.sh OK > /dev/null 2>&1
+@reboot  bash /home/jf/exec/send-status.sh REBOOT
+
+
+
+#env
+SHELL=/bin/bash
+HOME=/home/pi
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ 
+0 */1	* * *	pi    bash /home/disks/pidrive01/projects/meteovendee/bin/crontest1h.sh OK > /dev/null 2>&1
+ 
+
+Cron GUI
+A graphical application for Cron is available by installing the gnome-schedule package:
+
+sudo apt-get install gnome-schedule
+You can then launch the program Scheduled Tasks from the main menu.
+
+Editing crontab
+Run crontab with the -e flag to edit the cron table:
+
+crontab -e
+
+VIEW SCHEDULED TASKS
+View your currently saved scheduled tasks with:
+
+crontab -l
+
+[sourcecode language="bash"]
+pi@jmpi01:~ $ crontab -l
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+# 
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+# 
+# For more information see the manual pages of crontab(5) and cron(8)
+# 
+# m h  dom mon dow   command
+#env
+SHELL=/bin/bash
+HOME=/home/pi
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ 
+0 * * * * bash /home/disks/pidrive01/projects/meteovendee/bin/cron1heure.sh OK > /dev/null 2>&1 # JOB_ID_1
+
+[/sourcecode]
+
+RUN A TASK ON REBOOT
+To run a command every time the Raspberry Pi starts up, write @reboot instead of the time and date. For example:
+
+@reboot python /home/pi/myscript.py
+This will run your Python script every time the Raspberry Pi reboots. If you want your command to be run in the background while the Raspberry Pi continues starting up, add a space and & at the end of the line, like this:
+
+@reboot python /home/pi/myscript.py &
+
+9 - Mofifier GIF animé
+=======================
+
+from: http://www.imagemagick.org/Usage/anim_basics/
+
+-loop {number}	Number of times the GIF animation is to cycle though the image sequence before stopping. It is an output 'image write' setting, so can be set anywhere on the command line, though only the last such setting will be used.
+Usually this set by default, to zero (infinite loop)
+==> -loop 0
+
+-delay {time}  	Set the time delay (in 1/100th of a second) to pause after drawing the images that are read in or created after this setting has been defined.
+You can specify a different scale for the time delay by specifying a 'x' scaling (giving in ticks per second). For example '10x1' is 10, 1 second ticks, while '10x100' is 10, one hundredth of a second ticks.
+Basically the 'x' is equivalent to a fraction '/' sign. For example if you specify '1x160' will set a delay that is appropriate for 160 frames per second.
+	GIF animation delays must be specified in hundredths of a second for correct working, which is why that is the default time unit. The 'x' factor is used more for generating other more movie like formats, such a MNG's, and AVI's.
+==> delay 25
+ 
+10 - crom1heure - modifier pour tester si capture en route
+-----------------------------------------------------------
+
+Tester si la capture est en route sinon sortir
+
+#!/bin/bash
+#
+RACINE=/home/disks/pidrive01/projects/meteovendee
+
+# Se mettre dans le répertoire capture
+cd $RACINE/captures
+...
+var=$(ls -a . | sed -e "/\.$/d" | wc -l)
+echo $var
+if [ $var -eq 0 ]
+then
+   echo "vide"
+   exit
+fi
+echo "plein"
