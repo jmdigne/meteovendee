@@ -11,11 +11,17 @@ cd $RACINE/meteosat
 # Carte Radar (concerve Images de la journée)
 wget --output-document=sat24_radar.png https://api.sat24.com/mostrecent/EU/visual5hdcomplete
 cp sat24_radar.png $RACINE/transfert
+convert -verbose -resize 1600x974 sat24_radar.png testradar_1600x974.jpg
+convert -verbose -crop  1600x740+0+66 testradar_1600x974.jpg slid1.jpg
 mv sat24_radar.png $(date +%Y%m%d)_$(date +%H%M)_sat24_radar.png
+cp slid1.jpg $RACINE/transfert
 
 # Carte Pluie
 wget --output-document=sat24_pluie.png https://api.sat24.com/mostrecent/EU/rainTMC
+convert -verbose -resize 1600x1164 sat24_pluie.png sat24_pluie_1600x1164.jpg
+convert -verbose -crop  1600x740+0+244 sat24_pluie_1600x1164.jpg slid2.jpg
 mv sat24_pluie.png $RACINE/transfert
+mv slid2.jpg $RACINE/transfert
  
  
 # Carte GIF Animé

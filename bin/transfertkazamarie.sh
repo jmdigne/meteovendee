@@ -24,5 +24,8 @@ put sat24_pluie.png
 put sat24_radar.png
 put webcam.gif
 put sat24_radar_animated.gif
+cd slider
+put slid1.jpg
+put slid2.jpg
 bye
 EOMYF
