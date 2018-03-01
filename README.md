@@ -6,7 +6,7 @@ RaspberryPI Weather Application with associated static website hosted by OVH.com
 - Image capture is done using a USB PS3 Webcam
 - Radar/Rain images are grabbed from sat24.com
 - Images ar assembled using ImageMagick convert utility
-- The local website is push every hour using a cron job to OVH hosting service available at http://www.kazamarie.info/meteo/meteo.html
+- The local website is push every hour using a cron job to OVH hosting service available at http://www.kazamarie.info/meteo/
 
 
 ==============================================================================
